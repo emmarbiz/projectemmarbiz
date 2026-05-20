@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Tracker</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#171614;--surface:#1c1b19;--surface2:#201f1d;--surfaceoff:#252422;--surfacedyn:#2d2c2a;
+  --divider:#262523;--border:#393836;
+  --text:#cdccca;--muted:#797876;--faint:#5a5957;
+  --primary:#4f98a3;--primary-hover:#227f8b;--primary-hi:#313b3b;
+  --success:#6daa45;--success-hi:#3a4435;
+  --warning:#bb653b;--warning-hi:#564942;
+  --purple:#a86fdf;--purple-hi:#4e4652;
+  --orange:#fdab43;--orange-hi:#564b3e;
+  --blue:#5591c7;--blue-hi:#3a4550;
+  --r-sm:0.375rem;--r-md:0.5rem;--r-lg:0.75rem;--r-xl:1rem;--r-full:9999px;
+  --sh-sm:0 1px 2px rgba(0,0,0,.2);--sh-md:0 4px 12px rgba(0,0,0,.3);
+  --xs:clamp(.75rem,.7rem + .25vw,.875rem);
+  --sm:clamp(.875rem,.8rem + .35vw,1rem);
+  --base:clamp(1rem,.95rem + .25vw,1.125rem);
+  --lg:clamp(1.125rem,1rem + .75vw,1.5rem);
+  --sp1:.25rem;--sp2:.5rem;--sp3:.75rem;--sp4:1rem;--sp5:1.25rem;--sp6:1.5rem;--sp8:2rem;--sp10:2.5rem;--sp12:3rem;
+  --trans:180ms cubic-bezier(.16,1,.3,1);
+  --font:'Satoshi',system-ui,sans-serif;
+}
+[data-theme="light"] {
+  --bg:#f7f6f2;--surface:#f9f8f5;--surface2:#fbfbf9;--surfaceoff:#f0ede8;--surfacedyn:#e6e4df;
+  --divider:#dcd9d5;--border:#d4d1ca;
+  --text:#28251d;--muted:#7a7974;--faint:#bab9b4;
+  --primary:#01696f;--primary-hover:#0c4e54;--primary-hi:#cedcd8;
+  --success:#437a22;--success-hi:#d4dfcc;
+  --warning:#964219;--warning-hi:#ddcfc6;
+  --purple:#7a39bb;--purple-hi:#dacfde;
+  --orange:#da7101;--orange-hi:#e7d7c4;
+  --blue:#006494;--blue-hi:#c6d8e4;
+  --sh-sm:0 1px 2px rgba(0,0,0,.06);--sh-md:0 4px 12px rgba(0,0,0,.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+body{min-height:100dvh;font-family:var(--font);font-size:var(--sm);color:var(--text);background:var(--bg);line-height:1.5}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit}
+input,textarea,select{font:inherit;color:inherit}
+img,svg{display:block;max-width:100%}
+
+.app{max-width:680px;margin:0 auto;padding:var(--sp6) var(--sp4) var(--sp12)}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp8)}
+.app-title{font-size:var(--lg);font-weight:700}
+.app-date{font-size:var(--xs);color:var(--muted);margin-top:var(--sp1)}
+.theme-btn{width:36px;height:36px;border-radius:var(--r-full);background:var(--surfaceoff);color:var(--muted);display:flex;align-items:center;justify-content:center;transition:background var(--trans),color var(--trans)}
+.theme-btn:hover{background:var(--surfacedyn);color:var(--text)}
+
+.tabs{display:flex;gap:var(--sp1);margin-bottom:var(--sp6);background:var(--surface);border-radius:var(--r-lg);padding:var(--sp1);border:1px solid var(--border)}
+.tab{flex:1;padding:var(--sp2) var(--sp3);border-radius:calc(var(--r-lg) - var(--sp1));font-size:var(--xs);font-weight:500;text-align:center;color:var(--muted);transition:all var(--trans);cursor:pointer;border:none;background:none}
+.tab.active{background:var(--primary);color:#fff}
+.tab:hover:not(.active){color:var(--text);background:var(--surfaceoff)}
+
+.view{display:none}
+.view.active{display:block}
+
+.card{background:var(--surface);border-radius:var(--r-xl);border:1px solid var(--border);margin-bottom:var(--sp4);overflow:hidden}
+.card-head{display:flex;align-items:center;gap:var(--sp3);padding:var(--sp4) var(--sp5);border-bottom:1px solid var(--divider)}
+.card-icon{width:28px;height:28px;border-radius:var(--r-md);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.card-title{font-size:var(--sm);font-weight:600}
+.card-sub{font-size:var(--xs);color:var(--muted);margin-left:auto}
+.card-body{padding:var(--sp4) var(--sp5);display:flex;flex-direction:column;gap:var(--sp4)}
+
+.field{display:flex;flex-direction:column;gap:var(--sp2)}
+.label{font-size:var(--xs);font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.hint{font-size:var(--xs);color:var(--faint);margin-top:2px}
+
+.inp{width:100%;padding:var(--sp3) var(--sp4);background:var(--surfaceoff);border:1px solid var(--border);border-radius:var(--r-md);font-size:var(--sm);color:var(--text);transition:border-color var(--trans),box-shadow var(--trans)}
+.inp:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,152,163,.15)}
+.inp::placeholder{color:var(--faint)}
+textarea.inp{resize:vertical;min-height:72px;line-height:1.6}
+.inp-sm{padding:var(--sp2) var(--sp3);font-size:var(--xs)}
+.inp-time{width:120px}
+
+.scale-wrap{display:flex;gap:var(--sp2);align-items:center;flex-wrap:wrap}
+.scale-end{font-size:var(--xs);color:var(--faint)}
+.scale-btns{display:flex;gap:6px;flex-wrap:wrap}
+.scale-btn{width:34px;height:34px;border-radius:var(--r-md);font-size:var(--xs);font-weight:600;background:var(--surfaceoff);border:1px solid var(--border);color:var(--muted);transition:all var(--trans);cursor:pointer}
+.scale-btn:hover{border-color:var(--primary);color:var(--primary)}
+.scale-btn.on{border-color:var(--primary);background:var(--primary-hi);color:var(--primary)}
+
+.pills{display:flex;flex-wrap:wrap;gap:var(--sp2)}
+.pill{padding:var(--sp1) var(--sp3);border-radius:var(--r-full);font-size:var(--xs);font-weight:500;border:1px solid var(--border);background:var(--surfaceoff);color:var(--muted);transition:all var(--trans);cursor:pointer}
+.pill:hover{border-color:var(--primary);color:var(--text)}
+.pill.on{border-color:var(--primary);background:var(--primary-hi);color:var(--primary)}
+
+.row{display:flex;gap:var(--sp3);align-items:flex-start;flex-wrap:wrap}
+
+.med{display:flex;align-items:center;gap:var(--sp3);padding:var(--sp3) var(--sp4);background:var(--surfaceoff);border-radius:var(--r-lg);border:1px solid var(--border);margin-bottom:var(--sp2)}
+.med-dot{width:8px;height:8px;border-radius:var(--r-full);flex-shrink:0}
+.med-info{flex:1;min-width:0}
+.med-name{font-size:var(--xs);font-weight:600}
+.med-dose{font-size:var(--xs);color:var(--muted)}
+.tag{font-size:10px;padding:1px 6px;border-radius:var(--r-full);font-weight:600;margin-left:6px;vertical-align:middle}
+.tag-rx{background:var(--primary-hi);color:var(--primary)}
+.tag-s{background:var(--success-hi);color:var(--success)}
+.check{width:20px;height:20px;border-radius:var(--r-sm);border:2px solid var(--border);background:var(--surface);cursor:pointer;transition:all var(--trans);flex-shrink:0;position:relative}
+.check.on{background:var(--success);border-color:var(--success)}
+.check.on::after{content:'';position:absolute;left:3px;top:1px;width:10px;height:7px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg)}
+
+.btn-row{display:flex;gap:var(--sp3);margin-top:var(--sp2)}
+.btn{flex:1;padding:var(--sp3) var(--sp5);border-radius:var(--r-lg);font-size:var(--sm);font-weight:600;transition:background var(--trans),transform var(--trans),box-shadow var(--trans);cursor:pointer;border:none}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:var(--sh-sm)}
+.btn-primary:hover{background:var(--primary-hover);box-shadow:var(--sh-md)}
+.btn-secondary{background:var(--surfaceoff);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--surfacedyn)}
+.btn:active{transform:scale(.99)}
+
+.warn-box{padding:var(--sp3) var(--sp4);background:var(--surfaceoff);border-radius:var(--r-lg);border:1px solid var(--border);margin-top:var(--sp2)}
+.warn-title{font-size:var(--xs);font-weight:600;color:var(--warning);margin-bottom:4px}
+.warn-body{font-size:var(--xs);color:var(--muted)}
+
+.hist-entry{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);margin-bottom:var(--sp3);overflow:hidden}
+.hist-head{display:flex;align-items:center;justify-content:space-between;padding:var(--sp3) var(--sp5);cursor:pointer;transition:background var(--trans)}
+.hist-head:hover{background:var(--surfaceoff)}
+.hist-date{font-size:var(--sm);font-weight:600}
+.hist-preview{font-size:var(--xs);color:var(--muted);display:flex;gap:var(--sp3);flex-wrap:wrap}
+.hist-body{padding:var(--sp4) var(--sp5);border-top:1px solid var(--divider);display:none}
+.hist-body.open{display:block}
+.hist-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp3) var(--sp6)}
+.hf-label{font-size:var(--xs);color:var(--muted);font-weight:500;margin-bottom:2px}
+.hf-val{font-size:var(--xs)}
+.hist-note{margin-top:var(--sp3)}
+
+.empty{text-align:center;padding:var(--sp12) var(--sp8);color:var(--muted)}
+.empty-icon{font-size:32px;margin-bottom:var(--sp3);opacity:.4}
+
+.toast{position:fixed;bottom:var(--sp6);left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:var(--bg);padding:var(--sp3) var(--sp5);border-radius:var(--r-full);font-size:var(--xs);font-weight:500;transition:transform .3s cubic-bezier(.16,1,.3,1),opacity .3s;opacity:0;z-index:100;white-space:nowrap;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+.legend{display:flex;gap:var(--sp4);margin-bottom:var(--sp4)}
+.legend-item{display:flex;align-items:center;gap:var(--sp2);font-size:var(--xs);color:var(--muted)}
+
+@media(max-width:480px){.hist-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div>
+      <div class="app-title">Daily Tracker</div>
+      <div class="app-date" id="date-display"></div>
+    </div>
+    <button class="theme-btn" id="theme-btn" aria-label="Toggle theme">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="today" role="tab">Today</button>
+    <button class="tab" data-tab="meds" role="tab">Meds</button>
+    <button class="tab" data-tab="history" role="tab">History</button>
+  </div>
+
+  <!-- TODAY -->
+  <div class="view active" id="view-today">
+    <div class="card">
+      <div class="card-head"><div class="card-icon" style="background:var(--primary-hi)">🧠</div><div class="card-title">Mood & Mental</div></div>
+      <div class="card-body">
+        <div class="field"><div class="label">Overall mood</div><div class="scale-wrap"><span class="scale-end">Low</span><div class="scale-btns" id="s-mood"></div><span class="scale-end">Good</span></div></div>
+        <div class="field"><div class="label">Looping / intrusive thoughts</div><div class="scale-wrap"><span class="scale-end">None</span><div class="scale-btns" id="s-loop"></div><span class="scale-end">Severe</span></div><div class="hint">Rate intensity + persistence of looping today</div></div>
+        <div class="field"><div class="label">Anxiety / physical feelings</div><div class="scale-wrap"><span class="scale-end">None</span><div class="scale-btns" id="s-anxiety"></div><span class="scale-end">High</span></div></div>
+        <div class="field"><div class="label">Mood descriptors</div>
+          <div class="pills" id="p-mood">
+            <button class="pill" data-val="calm">Calm</button><button class="pill" data-val="low">Low</button><button class="pill" data-val="anxious">Anxious</button><button class="pill" data-val="irritable">Irritable</button><button class="pill" data-val="empty">Empty</button><button class="pill" data-val="hopeful">Hopeful</button><button class="pill" data-val="flat">Flat</button><button class="pill" data-val="overwhelmed">Overwhelmed</button><button class="pill" data-val="present">Present</button><button class="pill" data-val="tearful">Tearful</button><button class="pill" data-val="dissociated">Dissociated</button>
+          </div>
+        </div>
+        <div class="field"><div class="label">Notes on mental state</div><textarea class="inp" id="f-mental" placeholder="What were the thoughts about? Triggers? What helped?"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-icon" style="background:var(--orange-hi)">⚡</div><div class="card-title">Vyvanse</div></div>
+      <div class="card-body">
+        <div class="field"><div class="label">Dose taken</div><div class="row"><select class="inp inp-sm" id="f-vdose" style="width:110px"><option value="">None</option><option value="30mg">30mg</option><option value="40mg" selected>40mg</option><option value="50mg">50mg</option><option value="60mg">60mg</option><option value="70mg">70mg</option></select><input type="time" class="inp inp-sm inp-time" id="f-vtime"></div></div>
+        <div class="field"><div class="label">Felt it start</div><input type="time" class="inp inp-sm inp-time" id="f-vonset"></div>
+        <div class="field"><div class="label">Effectiveness today</div><div class="scale-wrap"><span class="scale-end">Poor</span><div class="scale-btns" id="s-vyvanse"></div><span class="scale-end">Great</span></div></div>
+        <div class="field"><div class="label">Fade / crash time</div><input type="time" class="inp inp-sm inp-time" id="f-vfade"></div>
+        <div class="field"><div class="label">Dex top-up</div><div class="row"><select class="inp inp-sm" id="f-ddose" style="width:100px"><option value="">None</option><option value="2.5mg">2.5mg</option><option value="5mg">5mg</option></select><input type="time" class="inp inp-sm inp-time" id="f-dtime" placeholder="Taken"><input type="time" class="inp inp-sm inp-time" id="f-dworeoff" placeholder="Wore off"></div></div>
+        <div class="field"><div class="label">Observations</div><textarea class="inp" id="f-vnotes" placeholder="Focus, patience, food noise, conversations, felt different to usual..."></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-icon" style="background:var(--success-hi)">🌿</div><div class="card-title">Physical & Sleep</div></div>
+      <div class="card-body">
+        <div class="field"><div class="label">Cycle day & phase</div><div class="row"><input type="number" class="inp inp-sm" id="f-cday" placeholder="Day #" style="width:80px" min="1" max="35"><select class="inp inp-sm" id="f-cphase" style="width:180px"><option value="">Phase...</option><option value="menstruation">Menstruation (d1–5)</option><option value="follicular">Follicular (d6–13)</option><option value="ovulation">Ovulation (~d14)</option><option value="luteal">Luteal (d15–24)</option><option value="late-luteal">Late luteal (d25–28)</option></select></div></div>
+        <div class="field"><div class="label">Sleep last night</div><div class="scale-wrap"><span class="scale-end">Terrible</span><div class="scale-btns" id="s-sleep"></div><span class="scale-end">Great</span></div></div>
+        <div class="field"><div class="label">Sleep notes</div><input type="text" class="inp inp-sm" id="f-sleepnotes" placeholder="Hot, wired, woke at 3am, dreams, extra melatonin..."></div>
+        <div class="field"><div class="label">Appetite / food noise</div><div class="scale-wrap"><span class="scale-end">High noise</span><div class="scale-btns" id="s-appetite"></div><span class="scale-end">Normal</span></div></div>
+        <div class="field"><div class="label">Physical symptoms</div>
+          <div class="pills" id="p-physical">
+            <button class="pill" data-val="headache">Headache</button><button class="pill" data-val="fatigue">Fatigue</button><button class="pill" data-val="cramps">Cramps</button><button class="pill" data-val="bloating">Bloating</button><button class="pill" data-val="hot">Overheating</button><button class="pill" data-val="grinding">Teeth grinding</button><button class="pill" data-val="nausea">Nausea</button><button class="pill" data-val="gastric">Gastric discomfort</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-icon" style="background:var(--purple-hi)">✦</div><div class="card-title">Overall</div></div>
+      <div class="card-body">
+        <div class="field"><div class="label">Today vs yesterday</div>
+          <div class="pills" id="p-overall">
+            <button class="pill" data-val="better">Better</button><button class="pill" data-val="same">Same</button><button class="pill" data-val="worse">Worse</button>
+          </div>
+        </div>
+        <div class="field"><div class="label">Notes for Andrew / Kerryn</div><textarea class="inp" id="f-notes" placeholder="Anything to flag at your next appointment — patterns, concerns, questions..."></textarea></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-save">Save today's entry</button>
+      <button class="btn btn-secondary" id="btn-dl">Download today</button>
+    </div>
+  </div>
+
+  <!-- MEDS -->
+  <div class="view" id="view-meds">
+    <div class="legend">
+      <div class="legend-item"><span class="tag tag-rx">Rx</span> Prescribed</div>
+      <div class="legend-item"><span class="tag tag-s">Supp</span> Supplement</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-icon" style="background:var(--primary-hi)">☀️</div><div class="card-title">Morning</div><div class="card-sub">with breakfast</div></div>
+      <div class="card-body" id="meds-am"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-icon" style="background:var(--warning-hi)">🕐</div><div class="card-title">Afternoon</div><div class="card-sub">early afternoon</div></div>
+      <div class="card-body" id="meds-afternoon">
+        <div class="warn-box"><div class="warn-title">⚠ This week only</div><div class="warn-body">½ tab clonidine early afternoon — stops after this week.</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-icon" style="background:var(--purple-hi)">🌙</div><div class="card-title">Evening / Night</div><div class="card-sub">with dinner / before bed</div></div>
+      <div class="card-body" id="meds-pm">
+        <div class="warn-box"><div class="warn-title">⚠ Clonidine — this week only</div><div class="warn-body">1½ tabs evening this week → back to 1 tab from next week.</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><div class="card-icon" style="background:var(--orange-hi)">⚡</div><div class="card-title">As Needed</div></div>
+      <div class="card-body" id="meds-prn"></div>
+    </div>
+    <p style="font-size:var(--xs);color:var(--muted);text-align:center;padding:var(--sp4) 0 var(--sp2)">Checkboxes reset daily. For reference only.</p>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="view" id="view-history">
+    <div id="hist-list"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Scales ──────────────────────────────────────────────────────────────────
+var scales = {};
+function buildScale(id, key) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  for (var i = 1; i <= 10; i++) {
+    (function(n) {
+      var b = document.createElement('button');
+      b.className = 'scale-btn';
+      b.textContent = n;
+      b.type = 'button';
+      b.addEventListener('click', function() {
+        scales[key] = n;
+        el.querySelectorAll('.scale-btn').forEach(function(x, xi) {
+          x.classList.toggle('on', xi + 1 === n);
+        });
+      });
+      el.appendChild(b);
+    })(i);
+  }
+}
+buildScale('s-mood','mood');
+buildScale('s-loop','loop');
+buildScale('s-anxiety','anxiety');
+buildScale('s-sleep','sleep');
+buildScale('s-appetite','appetite');
+buildScale('s-vyvanse','vyvanse');
+
+// ── Pills ────────────────────────────────────────────────────────────────────
+var pillState = {mood:[], physical:[], overall:''};
+function initPills(containerId, group) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  el.querySelectorAll('.pill').forEach(function(pill) {
+    pill.addEventListener('click', function() {
+      var val = this.dataset.val;
+      if (group === 'overall') {
+        el.querySelectorAll('.pill').forEach(function(p) { p.classList.remove('on'); });
+        this.classList.add('on');
+        pillState.overall = val;
+      } else {
+        this.classList.toggle('on');
+        var arr = group === 'mood' ? pillState.mood : pillState.physical;
+        var idx = arr.indexOf(val);
+        if (idx > -1) arr.splice(idx, 1); else arr.push(val);
+      }
+    });
+  });
+}
+initPills('p-mood','mood');
+initPills('p-physical','physical');
+initPills('p-overall','overall');
+
+// ── Meds ─────────────────────────────────────────────────────────────────────
+var medData = {
+  am: [
+    {name:'Fluvoxamine',dose:'150mg',note:'twice daily — first dose',color:'#4f98a3',type:'rx'},
+    {name:'Clonidine',dose:'½ tablet (50mcg)',note:'morning',color:'#a86fdf',type:'rx'},
+    {name:'Vyvanse',dose:'40mg (current)',note:'with water',color:'#fdab43',type:'rx'},
+    {name:'Estrogel',dose:'1 pump this week → 2 pumps from next week',note:'topical',color:'#d163a7',type:'rx'},
+    {name:'Slinda',dose:'4mg',note:'once daily',color:'#e8683a',type:'rx'},
+    {name:'Vitamin D3',dose:'1,000 IU (25mcg)',note:'Wagner — 1 capsule',color:'#e8b84b',type:'s'},
+    {name:'Fish Oil / Omega-3',dose:'2,000mg',note:'Microgenics odourless — 1 capsule',color:'#5591c7',type:'s'},
+    {name:'NAC',dose:'1,200mg',note:'as prescribed',color:'#bb653b',type:'s'}
+  ],
+  afternoon: [
+    {name:'Clonidine',dose:'½ tablet (50mcg)',note:'early afternoon this week only',color:'#a86fdf',type:'rx'}
+  ],
+  pm: [
+    {name:'Fluvoxamine',dose:'150mg',note:'twice daily — second dose',color:'#4f98a3',type:'rx'},
+    {name:'Clonidine',dose:'1½ tabs this week → 1 tab next week',note:'evening',color:'#a86fdf',type:'rx'},
+    {name:'Zyrtec (cetirizine)',dose:'10mg',note:'once daily evening',color:'#5591c7',type:'rx'},
+    {name:'Melatonin',dose:'2mg',note:'before bed',color:'#6daa45',type:'rx'},
+    {name:'Magnesium Glycinate',dose:'180mg elemental (2 caps)',note:'Bulk Nutrients — before bed',color:'#797876',type:'s'}
+  ],
+  prn: [
+    {name:'Dexamphetamine',dose:'5mg',note:'afternoon top-up if needed',color:'#fdab43',type:'rx'},
+    {name:'Clonidine (extra)',dose:'50mcg',note:'anxiety or looping — as needed',color:'#a86fdf',type:'rx'},
+    {name:'Panadol',dose:'500–1,000mg',note:'headache or pain',color:'#797876',type:'rx'}
+  ]
+};
+var todayKey = new Date().toDateString();
+function loadChecks() {
+  try { return JSON.parse(localStorage.getItem('checks-'+todayKey)||'{}'); } catch(e) { return {}; }
+}
+function saveChecks(obj) {
+  try { localStorage.setItem('checks-'+todayKey, JSON.stringify(obj)); } catch(e) {}
+}
+function renderMeds(list, containerId) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  var checks = loadChecks();
+  list.forEach(function(med, i) {
+    var key = containerId + '-' + i;
+    var div = document.createElement('div');
+    div.className = 'med';
+    var tagClass = med.type === 'rx' ? 'tag-rx' : 'tag-s';
+    var tagText = med.type === 'rx' ? 'Rx' : 'Supp';
+    div.innerHTML = '<div class="med-dot" style="background:'+med.color+'"></div>'
+      + '<div class="med-info"><div class="med-name">'+med.name+'<span class="tag '+tagClass+'">'+tagText+'</span></div>'
+      + '<div class="med-dose">'+med.dose+' · '+med.note+'</div></div>'
+      + '<div class="check'+(checks[key]?' on':'')+'" data-key="'+key+'"></div>';
+    div.querySelector('.check').addEventListener('click', function() {
+      this.classList.toggle('on');
+      var c = loadChecks();
+      c[this.dataset.key] = this.classList.contains('on');
+      saveChecks(c);
+    });
+    container.appendChild(div);
+  });
+}
+renderMeds(medData.am, 'meds-am');
+renderMeds(medData.afternoon, 'meds-afternoon');
+renderMeds(medData.pm, 'meds-pm');
+renderMeds(medData.prn, 'meds-prn');
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.tab === name);
+  });
+  document.querySelectorAll('.view').forEach(function(v) {
+    v.classList.remove('active');
+  });
+  var target = document.getElementById('view-' + name);
+  if (target) target.classList.add('active');
+  if (name === 'history') renderHistory();
+}
+document.querySelectorAll('.tab').forEach(function(btn) {
+  btn.addEventListener('click', function() { switchTab(this.dataset.tab); });
+});
+
+// ── Date ──────────────────────────────────────────────────────────────────────
+var DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function fmtDate(d) {
+  var dt = d ? new Date(d) : new Date();
+  return DAYS[dt.getDay()] + ', ' + dt.getDate() + ' ' + MONTHS[dt.getMonth()] + ' ' + dt.getFullYear();
+}
+document.getElementById('date-display').textContent = fmtDate();
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+// ── Collect entry ─────────────────────────────────────────────────────────────
+function collectEntry() {
+  return {
+    date: new Date().toISOString(),
+    mood: scales.mood||0, loop: scales.loop||0, anxiety: scales.anxiety||0,
+    sleep: scales.sleep||0, appetite: scales.appetite||0, vyvanse: scales.vyvanse||0,
+    moodPills: pillState.mood.slice(), physicalPills: pillState.physical.slice(), overall: pillState.overall,
+    cycleDay: document.getElementById('f-cday').value,
+    cyclePhase: document.getElementById('f-cphase').value,
+    vyvanseDose: document.getElementById('f-vdose').value,
+    vyvanseTime: document.getElementById('f-vtime').value,
+    vyvanseOnset: document.getElementById('f-vonset').value,
+    vyvanseFade: document.getElementById('f-vfade').value,
+    dexDose: document.getElementById('f-ddose').value,
+    dexTime: document.getElementById('f-dtime').value,
+    dexWoreOff: document.getElementById('f-dworeoff').value,
+    vyvanseNotes: document.getElementById('f-vnotes').value,
+    mentalNotes: document.getElementById('f-mental').value,
+    sleepNotes: document.getElementById('f-sleepnotes').value,
+    generalNotes: document.getElementById('f-notes').value
+  };
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+document.getElementById('btn-save').addEventListener('click', function() {
+  var entry = collectEntry();
+  var all = [];
+  try { all = JSON.parse(localStorage.getItem('tracker-entries')||'[]'); } catch(e){}
+  var ts = new Date().toDateString();
+  var idx = all.findIndex(function(e) { return new Date(e.date).toDateString() === ts; });
+  if (idx > -1) all[idx] = entry; else all.unshift(entry);
+  try { localStorage.setItem('tracker-entries', JSON.stringify(all)); } catch(e){}
+  toast('Entry saved ✓');
+});
+
+// ── Download ──────────────────────────────────────────────────────────────────
+document.getElementById('btn-dl').addEventListener('click', function() {
+  var e = collectEntry();
+  var d = new Date();
+  var lines = [
+    'DAILY TRACKER — ' + fmtDate(),
+    '',
+    'MOOD & MENTAL',
+    'Mood: ' + (e.mood||'—'),
+    'Looping: ' + (e.loop||'—'),
+    'Anxiety: ' + (e.anxiety||'—'),
+    'Descriptors: ' + (e.moodPills.join(', ')||'—'),
+    'Mental notes: ' + (e.mentalNotes||'—'),
+    '',
+    'VYVANSE',
+    'Dose: ' + (e.vyvanseDose||'—'),
+    'Taken at: ' + (e.vyvanseTime||'—'),
+    'Onset: ' + (e.vyvanseOnset||'—'),
+    'Effectiveness: ' + (e.vyvanse||'—') + '/10',
+    'Fade: ' + (e.vyvanseFade||'—'),
+    'Dex top-up: ' + (e.dexDose ? e.dexDose + (e.dexTime ? ' at ' + e.dexTime : '') : '—'),
+    'Dex wore off: ' + (e.dexWoreOff||'—'),
+    'Notes: ' + (e.vyvanseNotes||'—'),
+    '',
+    'PHYSICAL & SLEEP',
+    'Cycle day: ' + (e.cycleDay||'—'),
+    'Cycle phase: ' + (e.cyclePhase||'—'),
+    'Sleep: ' + (e.sleep||'—') + '/10',
+    'Sleep notes: ' + (e.sleepNotes||'—'),
+    'Food noise: ' + (e.appetite||'—') + '/10',
+    'Physical symptoms: ' + (e.physicalPills.join(', ')||'—'),
+    '',
+    'OVERALL',
+    'Compared with yesterday: ' + (e.overall||'—'),
+    'Notes for clinicians: ' + (e.generalNotes||'—')
+  ].join('
+');
+  var blob = new Blob([lines], {type:'text/plain;charset=utf-8'});
+  var a = document.createElement('a');
+  var mm = String(d.getMonth()+1).padStart(2,'0');
+  var dd = String(d.getDate()).padStart(2,'0');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tracker-' + d.getFullYear() + '-' + mm + '-' + dd + '.txt';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  toast('Downloaded ✓');
+});
+
+// ── History ───────────────────────────────────────────────────────────────────
+function renderHistory() {
+  var list = document.getElementById('hist-list');
+  list.innerHTML = '';
+  var entries = [];
+  try { entries = JSON.parse(localStorage.getItem('tracker-entries')||'[]'); } catch(e){}
+  if (!entries.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>No entries yet.<br>Save your first entry on the Today tab.</p></div>';
+    return;
+  }
+  entries.forEach(function(entry, i) {
+    var div = document.createElement('div');
+    div.className = 'hist-entry';
+    var oe = {better:'↑',same:'→',worse:'↓'}[entry.overall]||'';
+    var preview = [
+      entry.cycleDay ? 'Day '+entry.cycleDay+(entry.cyclePhase?' · '+entry.cyclePhase:'') : '',
+      entry.mood ? 'Mood '+entry.mood+'/10' : '',
+      entry.loop ? 'Loop '+entry.loop+'/10' : '',
+      entry.vyvanseDose || '',
+      oe
+    ].filter(Boolean).join(' · ');
+    div.innerHTML = '<div class="hist-head" data-idx="'+i+'">'
+      + '<div class="hist-date">'+fmtDate(entry.date)+'</div>'
+      + '<div class="hist-preview">'+preview+'</div>'
+      + '</div>'
+      + '<div class="hist-body" id="hb-'+i+'">'
+      + '<div class="hist-grid">'
+      + (entry.mood ? '<div><div class="hf-label">Mood</div><div class="hf-val">'+entry.mood+'/10'+(entry.moodPills&&entry.moodPills.length?' · '+entry.moodPills.join(', '):'')+' </div></div>' : '')
+      + (entry.loop ? '<div><div class="hf-label">Looping</div><div class="hf-val">'+entry.loop+'/10</div></div>' : '')
+      + (entry.anxiety ? '<div><div class="hf-label">Anxiety</div><div class="hf-val">'+entry.anxiety+'/10</div></div>' : '')
+      + (entry.sleep ? '<div><div class="hf-label">Sleep</div><div class="hf-val">'+entry.sleep+'/10'+(entry.sleepNotes?' · '+entry.sleepNotes:'')+' </div></div>' : '')
+      + (entry.cycleDay ? '<div><div class="hf-label">Cycle</div><div class="hf-val">Day '+entry.cycleDay+(entry.cyclePhase?' · '+entry.cyclePhase:'')+' </div></div>' : '')
+      + (entry.vyvanseDose ? '<div><div class="hf-label">Vyvanse</div><div class="hf-val">'+entry.vyvanseDose+(entry.vyvanseTime?' @ '+entry.vyvanseTime:'')+(entry.vyvanse?' ('+entry.vyvanse+'/10)':'')+' </div></div>' : '')
+      + (entry.dexDose ? '<div><div class="hf-label">Dex top-up</div><div class="hf-val">'+entry.dexDose+(entry.dexTime?' @ '+entry.dexTime:'')+' </div></div>' : '')
+      + (entry.appetite ? '<div><div class="hf-label">Food noise</div><div class="hf-val">'+entry.appetite+'/10</div></div>' : '')
+      + (entry.physicalPills&&entry.physicalPills.length ? '<div><div class="hf-label">Physical</div><div class="hf-val">'+entry.physicalPills.join(', ')+'</div></div>' : '')
+      + (entry.overall ? '<div><div class="hf-label">Overall</div><div class="hf-val">'+entry.overall+'</div></div>' : '')
+      + '</div>'
+      + (entry.mentalNotes ? '<div class="hist-note"><div class="hf-label">Mental notes</div><div class="hf-val">'+entry.mentalNotes+'</div></div>' : '')
+      + (entry.vyvanseNotes ? '<div class="hist-note"><div class="hf-label">Vyvanse notes</div><div class="hf-val">'+entry.vyvanseNotes+'</div></div>' : '')
+      + (entry.generalNotes ? '<div class="hist-note"><div class="hf-label">Notes for clinicians</div><div class="hf-val">'+entry.generalNotes+'</div></div>' : '')
+      + '</div>';
+    div.querySelector('.hist-head').addEventListener('click', function() {
+      var body = document.getElementById('hb-'+this.dataset.idx);
+      if (body) body.classList.toggle('open');
+    });
+    list.appendChild(div);
+  });
+}
+
+// ── Theme ─────────────────────────────────────────────────────────────────────
+var theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches) ? 'dark' : 'light';
+document.documentElement.setAttribute('data-theme', theme);
+function updateThemeIcon() {
+  document.getElementById('theme-btn').innerHTML = theme === 'dark'
+    ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+    : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+}
+updateThemeIcon();
+document.getElementById('theme-btn').addEventListener('click', function() {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', theme);
+  updateThemeIcon();
+});
+</script>
+</body>
+</html>
